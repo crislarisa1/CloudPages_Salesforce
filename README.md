@@ -1,77 +1,58 @@
 # CloudPages
 
-# Cloud Page 1: Inscrição
-
-## Descrição
-
-Landing page desenvolvida no Salesforce Marketing Cloud para captação de emails, armazenamento em Data Extension e exibição de mensagens dinâmicas conforme o estado do utilizador.
+Repositório com exemplos práticos de CloudPages desenvolvidas no Salesforce Marketing Cloud, organizadas por branches, cada uma representando um caso de uso específico dentro de CRM e marketing automation.
 
 ---
 
-## Funcionamento
+## Estrutura
 
-* Captura o email via formulário
-* Verifica se já existe na base (`LookupRows`)
-* Se novo:
-
-  * Insere com `UpsertDE`
-  * Gera subscriber key
-  * Regista data/hora
-  * Exibe mensagem de sucesso
-* Se já existir:
-
-  * Não insere novamente
-  * Exibe mensagem alternativa
-* Controla exibição do formulário via variável (`@exibir_form`)
+Cada Cloud Page está isolada em uma branch própria, permitindo versionamento independente, organização por contexto de negócio e reutilização de componentes.
 
 ---
 
-## AMPscript (Resumo)
+## Cloud Pages
 
-```ampscript
-SET @email = RequestParameter('email')
-SET @jaExiste = LookupRows("DEX_LP_INSCRICAO","email",@email)
+### 1. Inscrição
 
-IF NOT EMPTY(@email) AND RowCount(@jaExiste) == 0 THEN
-  UpsertDE(...)
-  SET @exibir_form = "false"
+Landing page focada em captação de leads.
 
-ELSEIF RowCount(@jaExiste) > 0 THEN
-  SET @exibir_form = "false"
-ENDIF
-```
+* Captura email via formulário
+* Valida duplicidade com `LookupRows`
+* Insere dados com `UpsertDE`
+* Gera subscriber key
+* Exibe mensagens dinâmicas (novo vs existente)
 
----
-
-## HTML
-
-* Formulário submete para a própria página
-* Conteúdo é renderizado dinamicamente com AMPscript
-
-```ampscript
-%%[ IF @exibir_form == "false" THEN ]%%
-  %%=v(@mensagem)=%%
-%%[ ELSE ]%%
-  <!-- formulário -->
-%%[ ENDIF ]%%
-```
+**Objetivo:** construção de base de dados e entrada de contactos no ecossistema CRM.
 
 ---
 
-## Data Extension
+### 2. Mensagem Personalizada
 
-**Nome:** `DEX_LP_INSCRICAO`
+Landing page interativa para envio de mensagens entre utilizadores.
 
-| Campo               | Tipo |
-| ------------------- | ---- |
-| email               | Text |
-| nova_subscriber_key | Text |
-| data_resp           | Date |
+* Captura dados do remetente e destinatário
+* Permite seleção de mensagens pré-definidas
+* Valida inputs obrigatórios
+* Insere dados com `InsertData`
+* Preparada para integração com Journey Builder
+
+**Objetivo:** ativação de campanhas emocionais e triggers de comunicação personalizada.
 
 ---
 
-## Notas
+## Tecnologias
 
-* Evita duplicidade de leads
-* Estrutura simples e reutilizável
-* Preparada para integração com jornadas e CRM
+* AMPscript
+* HTML5
+* CSS (Tailwind)
+* JavaScript
+* Salesforce Marketing Cloud
+
+---
+
+## Objetivo do Repositório
+
+* Centralizar implementações de CloudPages
+* Servir como portfólio técnico
+* Demonstrar boas práticas de CRM e marketing automation
+* Facilitar reutilização e escalabilidade de soluções
