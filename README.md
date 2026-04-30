@@ -44,7 +44,7 @@ Landing page interativa para envio de mensagens entre utilizadores.
 
 * AMPscript
 * HTML5
-* CSS (Tailwind)
+* CSS
 * JavaScript
 * Salesforce Marketing Cloud
 
