@@ -1,0 +1,128 @@
+%%[
+VAR @dataExtensionName, @email, @nova_subscriber_key, @data_resp, @jaExiste, @mensagem, @exibir_form
+
+SET @dataExtensionName = "DEX_LP_INSCRICAO"
+SET @email = RequestParameter('email')
+SET @nova_subscriber_key = Concat("CLIENTE_PT_", @email)
+SET @data_resp = Now()
+SET @exibir_form = "true"
+
+IF NOT EMPTY(@email) THEN
+  SET @jaExiste = LookupRows(@dataExtensionName,"email",@email)
+ENDIF
+
+IF NOT EMPTY(@email) AND RowCount(@jaExiste) == 0 THEN
+  UpsertDE(
+    @dataExtensionName,
+    1,
+    "email", @email,
+    "nova_subscriber_key", @nova_subscriber_key,
+    "data_resp", @data_resp
+  )
+  SET @mensagem = "Parabéns! Acabas de receber o teu passe VIP de Natal! 🎄✨<br> Usa o cupão <strong>CUPÃO</strong> no <a href='https://www.google.com/'>site</a> ou em <a href='https://www.google.com/'>loja</a> e garante 5% de desconto EXTRA. <br> É o nosso presente especial para celebrares com quem mais amas. A marca preferida para presentear." ;
+  SET @exibir_form = "false"
+
+ELSEIF RowCount(@jaExiste) > 0 THEN 
+  SET @mensagem = "O teu acesso VIP de Natal já está ATIVO! 🎄✨<br>
+Vimos o teu entusiasmo e queremos garantir: o teu cupão exclusivo <strong>CUPÃO</strong> para 5% EXTRA está à tua espera. Não te esqueças de o usar no <a href='https://www.google.com/'>site</a> ou em <a href='https://www.google.com/'>loja</a>! <br> A marca preferida para presentear!";
+  SET @exibir_form = "false"
+ENDIF
+]%%
+
+<!DOCTYPE html>
+<html lang="pt-pt">
+<head>
+  <meta charset="utf-8">
+  <title>Cloud Page | Inscrições</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <style>
+    :root {
+      --google-preto: #111111;
+      --google-verde: #1E3932;
+      --google-branco: #ffffff;
+      --google-cinza: #f2f2f2;
+    }
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--google-preto); color: var(--google-branco); line-height: 1.6; margin: 0; }
+    header { background: var(--google-verde); padding: 20px; text-align: center; }
+    header img { max-width: 180px; }
+    .hero { text-align: center; padding: 60px 20px; background: var(--google-preto); }
+    .hero img { max-width: 100%; height: auto; border-radius: 12px; margin-bottom: 30px; }
+    .hero h1 { font-size: 2.2rem; color: var(--google-branco); margin-bottom: 15px; }
+    .hero p { font-size: 1.1rem; max-width: 1000px; margin: 0 auto 30px; color: var(--google-cinza); }
+    .form-container { background: var(--google-branco); color: var(--google-preto); max-width: 500px; margin: 0 auto; padding: 30px 25px; border-radius: 12px; box-shadow: 0 6px 25px rgba(0,0,0,0.4); text-align: left; }
+    .form-container h2 { font-size: 1.4rem; margin-bottom: 15px; color: var(--google-verde); text-align: center; }
+    label { display: block; margin-bottom: 8px; font-size: 0.95rem; font-weight: bold; }
+    input[type="email"] { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; margin-bottom: 15px; }
+    .checkbox-container { margin: 15px 0; font-size: 0.9rem; color: #333; }
+    .checkbox-container a { color: var(--google-verde); text-decoration: underline; }
+    button { width: 100%; padding: 14px; background: var(--google-verde); color: var(--google-branco); font-size: 1rem; font-weight: bold; border: none; border-radius: 6px; cursor: pointer; transition: background 0.3s ease; }
+    button:hover { background: #145c4a; }
+    .nota { margin-top: 12px; font-size: 0.85rem; color: #555; text-align: center; }
+    footer { text-align: center; padding: 20px; font-size: 0.85rem; color: #aaa; }
+    @media (max-width: 600px) {
+      .hero h1 { font-size: 1.7rem; }
+      .hero p { font-size: 1rem; }
+      .form-container { padding: 20px; }
+    }
+  </style>
+</head>
+<body>
+
+  <header>
+    <img src="IMAGEM_LOGO" alt="Desenvolvido por Cristina Amaral @crislarisa1">
+  </header>
+
+  <section class="hero">
+    <img src="IMAGEM_BANNER" 
+         alt="Cloud Page | Inscrições">
+         
+    <h1>As palavras deixam marcas. <br> Que sejam apenas de amor.</h1>
+
+<p>
+  Neste Natal, o amor vira presente.<br>  
+  Inscreve-te e recebe em primeira mão as novidades da  
+  <span style="white-space: nowrap;">marca preferida para presentear</span>.<br>
+  Queres ser o primeiro a conhecer as ofertas que vão tornar este Natal ainda mais especial? <br>  
+  Regista-te agora e fica a par de todas as surpresas.
+</p>
+
+</section>
+
+  <section class="form-container">
+    %%[ IF @exibir_form == "false" THEN ]%%
+      <p>%%=v(@mensagem)=%%</p>
+    %%[ ELSE ]%%
+      <h2>Garante já a tua inscrição</h2>
+      <form action="%%=RequestParameter('PAGEURL')=%%" method="post">
+        <label for="email">O meu e-mail:</label>
+        <input type="email" name="email" id="email" placeholder="exemplo@email.com" required>
+
+        <div class="checkbox-container">
+          <label>
+            Ao prosseguir, estará ciente de que os dados informados serão tratados de acordo com a
+            <a href="https://policies.google.com/privacy" target="_blank">Política de Privacidade</a>.
+          </label>
+        </div>
+
+        <button type="submit">Quero inscrever-me</button>
+        <p class="nota">O Natal está a chegar e as melhores ofertas são para quem se prepara. Não percas a oportunidade de poupar nesta época mágica!</p>
+      </form>
+    %%[ ENDIF ]%%
+  </section>
+
+  <footer>
+    <p style="font-size: 0.75rem; line-height: 1.4; color: #aaa; max-width: 800px; margin: 0 auto;">
+      Ao inscreveres-te, estás a concordar em receber e-mails com ofertas exclusivas, novidades e campanhas diretamente no teu e-mail.<br>
+      Não te preocupes, não gostamos de spam, podes cancelar a subscrição a qualquer momento.
+    </p>
+    <br>
+    <p style="font-size: 0.7rem; line-height: 1.4; color: #777; max-width: 800px; margin: 0 auto;">
+      © 2025<br>
+      CRISTINA AMARAL, PORTO, PORTUGAL.<br>
+      Todos os direitos reservados.
+    </p>
+  </footer>
+
+</body>
+</html>
