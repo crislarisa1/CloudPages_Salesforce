@@ -1,0 +1,203 @@
+%%[
+VAR @dataExtensionName, @emailRemetente, @emailDestinatario, @nomeDe, @nomePara, @mensagemCard, @submitted
+VAR @mensagemSucesso, @mensagemErro, @subKey, @novaKey, @dataResp, @insertStatus
+
+SET @dataExtensionName = "DEX_LP_MENSAGEMPERSONALIZADA"
+
+/* Captura de Parâmetros */
+SET @emailRemetente = Trim(RequestParameter('emailRemetente'))
+SET @emailDestinatario = Trim(RequestParameter('emailDestinatario'))
+SET @nomeDe = Trim(RequestParameter('nomeDe'))
+SET @nomePara = Trim(RequestParameter('nomePara'))
+SET @mensagemCard = RequestParameter('mensagemCard')
+SET @submitted = RequestParameter('submitted')
+
+IF @submitted == "true" THEN
+    IF EMPTY(@emailDestinatario) OR EMPTY(@emailRemetente) OR EMPTY(@mensagemCard) THEN
+        SET @mensagemErro = "Por favor, preencha todos os campos e selecione uma mensagem."
+    ELSE
+        SET @subKey = @emailDestinatario
+        /* Formato original solicitado para múltiplos envios (DE deve estar sem Primary Key) */
+        SET @novaKey = Concat("USUARIO_PT_", @emailDestinatario) 
+        SET @dataResp = Now()
+
+        /* Inserção na DE para Journey Builder */
+        SET @insertStatus = InsertData(@dataExtensionName,
+            "SubscriberKey", @subKey,
+            "EmailAddress", @emailDestinatario,
+            "nomeDe", @nomeDe,
+            "nomePara", @nomePara,
+            "mensagem", @mensagemCard,
+            "nova_subscriber_key", @novaKey,
+            "data_resp", @dataResp,
+            "emailRemetente", @emailRemetente
+        )
+
+        IF @insertStatus > 0 THEN
+            SET @mensagemSucesso = "A tua mensagem de amor foi registada! O e-mail será enviado em breve. 💚"
+        ELSE
+            SET @mensagemErro = "Ocorreu um erro ao processar. Por favor, tenta novamente."
+        ENDIF
+    ENDIF
+ENDIF
+]%%
+
+<!DOCTYPE html>
+<html lang="pt-pt">
+<head>
+    <meta charset="utf-8">
+    <title>Mensagens de Amor</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.2/gsap.min.js"></script>
+
+    <style type="text/tailwindcss">
+        @layer base {
+            :root {
+                --cor-verde: #007a56;
+                --cor-verde-dark: #1E3932;
+            }
+            body { @apply bg-[#007a56] font-sans antialiased; }
+        }
+        .card-selected {
+            @apply border-[#007a56] bg-emerald-50 ring-2 ring-[#007a56] ring-opacity-50 scale-[1.02] shadow-lg;
+        }
+        .gsap-reveal { opacity: 0; transform: translateY(20px); }
+    </style>
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        cor: { DEFAULT: '#007a56', dark: '#1E3932' }
+                    }
+                }
+            }
+        }
+    </script>
+</head>
+<body class="text-slate-900">
+
+    <header class="bg-white py-6 shadow-md relative z-10">
+        <div class="container mx-auto px-4 flex justify-center">
+            <img src="IMAGEM_BANNER" alt="Mensagens de Amor" class="h-12 lg:h-16">
+        </div>
+    </header>
+
+    <main class="container mx-auto px-4 py-12 max-w-5xl">
+        
+        <section class="text-center mb-12 max-w-3xl mx-auto gsap-reveal">
+            <h2 class="text-white text-3xl md:text-4xl font-light tracking-widest uppercase mb-6">
+                A nossa missão em <span class="font-bold text-emerald-200">2026</span>
+            </h2>
+            <p class="text-emerald-50 text-lg leading-relaxed">
+                Desafiar-te a quebrar o silêncio. Sem medo e sem reservas. Diz "amo-te" a alguém importante. Diz "amo-te" a quem é sangue do teu sangue mas também aos amigos que são família. Diz "amo-te" a ti mesmo(a), celebrando quem és.
+            </p>
+        </section>
+
+        <div class="text-center mb-10 gsap-reveal">
+            <h3 class="text-white text-2xl font-semibold italic">A quem gostarias de dizer amo-te hoje?</h3>
+        </div>
+
+        <section class="bg-white rounded-3xl p-8 md:p-12 shadow-2xl gsap-reveal border-t-8 border-cor-dark">
+            
+            %%[ IF NOT EMPTY(@mensagemSucesso) THEN ]%%
+                <div class="bg-emerald-100 border-2 border-dashed border-emerald-600 text-cor-dark p-8 rounded-xl text-center text-xl font-bold">
+                    %%=v(@mensagemSucesso)=%%
+                </div>
+            %%[ ELSE ]%%
+
+                %%[ IF NOT EMPTY(@mensagemErro) THEN ]%%
+                    <div class="bg-red-50 border-l-4 border-red-500 text-red-700 p-4 mb-6 rounded">%%=v(@mensagemErro)=%%</div>
+                %%[ ENDIF ]%%
+
+                <form action="%%=RequestParameter('PAGEURL')=%%" method="post" id="loveForm" class="space-y-8">
+                    <input type="hidden" name="submitted" value="true">
+                    <input type="hidden" name="mensagemCard" id="selectedMessage" value="">
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="text-cor-dark font-bold text-xs uppercase mb-2 block tracking-widest">O teu e-mail</label>
+                            <input type="email" name="emailRemetente" required class="w-full px-4 py-3 border-2 border-slate-100 rounded-xl focus:border-cor outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="text-cor-dark font-bold text-xs uppercase mb-2 block tracking-widest">E-mail de quem recebe</label>
+                            <input type="email" name="emailDestinatario" required class="w-full px-4 py-3 border-2 border-slate-100 rounded-xl focus:border-cor outline-none transition-all">
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div>
+                            <label class="text-cor-dark font-bold text-xs uppercase mb-2 block tracking-widest">De:</label>
+                            <input type="text" name="nomeDe" required class="w-full px-4 py-3 border-2 border-slate-100 rounded-xl focus:border-cor outline-none transition-all">
+                        </div>
+                        <div>
+                            <label class="text-cor-dark font-bold text-xs uppercase mb-2 block tracking-widest">Para:</label>
+                            <input type="text" name="nomePara" required class="w-full px-4 py-3 border-2 border-slate-100 rounded-xl focus:border-cor outline-none transition-all">
+                        </div>
+                    </div>
+
+                    <div>
+                        <label class="text-cor-dark font-bold text-xs uppercase mb-4 block tracking-widest">Escolhe a tua Mensagem</label>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            
+                            <div onclick="selectCard(this)" class="card cursor-pointer border-2 border-slate-50 p-6 rounded-2xl transition-all hover:border-emerald-200 bg-slate-50/50">
+                                <span class="text-cor text-[10px] font-black uppercase mb-2 block">Romântica</span>
+                                <p class="text-sm text-slate-700 italic leading-relaxed card-text">Portugal é um país de poetas, mas às vezes as palavras ficam guardadas no peito. Hoje, decidi que o silêncio não tem lugar entre nós. Amo-te, hoje e todos os dias.</p>
+                            </div>
+
+                            <div onclick="selectCard(this)" class="card cursor-pointer border-2 border-slate-50 p-6 rounded-2xl transition-all hover:border-emerald-200 bg-slate-50/50">
+                                <span class="text-cor text-[10px] font-black uppercase mb-2 block">Familiar</span>
+                                <p class="text-sm text-slate-700 italic leading-relaxed card-text">Dizem que o nosso povo demonstra o amor em gestos e cuidados, mas eu quero que o ouças de mim. Obrigado(a) por seres o meu porto seguro. Amo-te.</p>
+                            </div>
+
+                            <div onclick="selectCard(this)" class="card cursor-pointer border-2 border-slate-50 p-6 rounded-2xl transition-all hover:border-emerald-200 bg-slate-50/50">
+                                <span class="text-cor text-[10px] font-black uppercase mb-2 block">Amizade</span>
+                                <p class="text-sm text-slate-700 italic leading-relaxed card-text">Há amigos que a vida nos dá e que se tornam o nosso sangue. Porque as palavras têm poder e a nossa amizade merece ser celebrada: Amo-te, meu/minha grande amigo(a)!</p>
+                            </div>
+
+                            <div onclick="selectCard(this)" class="card cursor-pointer border-2 border-slate-50 p-6 rounded-2xl transition-all hover:border-emerald-200 bg-slate-50/50">
+                                <span class="text-cor text-[10px] font-black uppercase mb-2 block">Inspiração</span>
+                                <p class="text-sm text-slate-700 italic leading-relaxed card-text">7 em cada 10 portugueses sentem dificuldade em dizer estas cinco letras. Eu escolhi fazer parte dos outros 3. Sem medo e sem reservas: Amo-te.</p>
+                            </div>
+
+                        </div>
+                    </div>
+
+                    <button type="submit" id="submitBtn" disabled class="w-full bg-cor-dark text-white py-5 rounded-2xl font-bold text-lg uppercase tracking-widest hover:bg-black disabled:bg-slate-200 disabled:text-slate-400 disabled:cursor-not-allowed transition-all transform hover:-translate-y-1">
+                        Enviar Amor agora
+                    </button>
+                </form>
+            %%[ ENDIF ]%%
+        </section>
+    </main>
+
+    <footer class="bg-white py-12 mt-12 border-t border-slate-100">
+        <div class="container mx-auto px-4 text-center">
+            <p class="text-cor-dark font-bold mb-6">© 2026 CRISTINA AMARAL, PORTO, PORTUGAL.</p>
+            <div class="max-w-4xl mx-auto text-[10px] leading-relaxed text-slate-400 uppercase tracking-wider text-justify md:text-center">
+                Ao submeter o presente formulário, o utilizador declara, sob compromisso de honra, ser o titular dos dados facultados ou deter a legítima autorização de terceiros para o seu preenchimento, assumindo plena e exclusiva responsabilidade pela veracidade e exatidão dos mesmos. Nos termos do Regulamento Geral sobre a Proteção de Dados (RGPD) 2016/679 e da Lei n.º 58/2019 (LPDP), o utilizador presta o seu consentimento livre, informado e inequívoco para que a empresa XXXXXXX, na qualidade de Responsável pelo Tratamento, proceda à recolha e processamento dos dados para fins de gestão de clientes, segmentação de perfis e comunicações de marketing direto. É garantido ao titular o direito de acesso, retificação, oposição e apagamento dos dados, conforme detalhado na nossa Política de Privacidade.
+            </div>
+        </div>
+    </footer>
+
+    <script>
+        function selectCard(element) {
+            document.querySelectorAll('.card').forEach(c => c.classList.remove('card-selected'));
+            element.classList.add('card-selected');
+            
+            // Pega o texto do parágrafo dentro do card clicado
+            const text = element.querySelector('.card-text').innerText;
+            document.getElementById('selectedMessage').value = text;
+            document.getElementById('submitBtn').disabled = false;
+
+            gsap.fromTo(element, { scale: 0.98 }, { scale: 1.02, duration: 0.2 });
+        }
+
+        document.addEventListener("DOMContentLoaded", () => {
+            gsap.to(".gsap-reveal", { opacity: 1, y: 0, stagger: 0.2, duration: 1, ease: "power4.out" });
+        });
+    </script>
+</body>
+</html>

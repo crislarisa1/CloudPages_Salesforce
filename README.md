@@ -1,60 +1,134 @@
 # CloudPages
 
-Repositório com exemplos práticos de CloudPages desenvolvidas no Salesforce Marketing Cloud, organizadas por branches, cada uma representando um caso de uso específico dentro de CRM e marketing automation.
+# Cloud Page 2: Mensagem Personalizada
+
+## Descrição
+
+Cloud Page desenvolvida no Salesforce Marketing Cloud para envio de mensagens personalizadas entre utilizadores, com armazenamento em Data Extension e integração com Journey Builder.
 
 ---
 
-## Estrutura
+## Funcionamento
 
-Cada Cloud Page está isolada em uma branch própria, permitindo versionamento independente, organização por contexto de negócio e reutilização de componentes.
+* Captura dados do formulário:
 
----
+  * Email remetente
+  * Email destinatário
+  * Nome de quem envia
+  * Nome de quem recebe
+  * Mensagem selecionada
 
-## Cloud Pages
+* Valida se os campos obrigatórios estão preenchidos
 
-### 1. Inscrição
+* Se inválido:
 
-Landing page focada em captação de leads.
+  * Exibe mensagem de erro
 
-* Captura email via formulário
-* Valida duplicidade com `LookupRows`
-* Insere dados com `UpsertDE`
-* Gera subscriber key
-* Exibe mensagens dinâmicas (novo vs existente)
+* Se válido:
 
-**Objetivo:** construção de base de dados e entrada de contactos no ecossistema CRM.
-
----
-
-### 2. Mensagem Personalizada
-
-Landing page interativa para envio de mensagens entre utilizadores.
-
-* Captura dados do remetente e destinatário
-* Permite seleção de mensagens pré-definidas
-* Valida inputs obrigatórios
-* Insere dados com `InsertData`
-* Preparada para integração com Journey Builder
-
-**Objetivo:** ativação de campanhas emocionais e triggers de comunicação personalizada.
+  * Insere registo na Data Extension (`InsertData`)
+  * Gera Subscriber Key
+  * Regista data/hora
+  * Prepara envio via Journey Builder
+  * Exibe mensagem de sucesso
 
 ---
 
-## Tecnologias
+## AMPscript
 
-* AMPscript
-* HTML5
-* CSS
-* JavaScript
-* Salesforce Marketing Cloud
+```ampscript
+SET @submitted = RequestParameter('submitted')
+
+IF @submitted == "true" THEN
+
+  IF EMPTY(@emailDestinatario) OR EMPTY(@emailRemetente) OR EMPTY(@mensagemCard) THEN
+    SET @mensagemErro = "Erro"
+  ELSE
+
+    SET @insertStatus = InsertData(...)
+
+    IF @insertStatus > 0 THEN
+      SET @mensagemSucesso = "Sucesso"
+    ELSE
+      SET @mensagemErro = "Erro"
+    ENDIF
+
+  ENDIF
+
+ENDIF
+```
 
 ---
 
-## Objetivo do Repositório
+## HTML
 
-* Centralizar implementações de CloudPages
-* Servir como portfólio técnico
-* Demonstrar boas práticas de CRM e marketing automation
-* Facilitar reutilização e escalabilidade de soluções
+* Formulário com envio para a própria página
+* Campo hidden para controlo de submissão
+* Campo hidden para armazenar mensagem selecionada
+
+```html
+<form action="%%=RequestParameter('PAGEURL')=%%" method="post">
+```
 
 ---
+
+## Interação (Frontend)
+
+* Seleção de mensagens via cards
+* Ao clicar:
+
+  * Aplica estilo visual (seleção)
+  * Preenche campo hidden (`mensagemCard`)
+  * Ativa botão de envio
+
+```javascript
+function selectCard(element) {
+  const text = element.querySelector('.card-text').innerText;
+  document.getElementById('selectedMessage').value = text;
+  document.getElementById('submitBtn').disabled = false;
+}
+```
+
+---
+
+## Renderização Condicional
+
+```ampscript
+%%[ IF NOT EMPTY(@mensagemSucesso) THEN ]%%
+  <!-- sucesso -->
+%%[ ELSE ]%%
+  <!-- formulário -->
+%%[ ENDIF ]%%
+```
+
+* Exibe sucesso após envio
+* Caso contrário, mantém formulário
+
+---
+
+## Data Extension
+
+**Nome:** `DEX_LP_MENSAGEMPERSONALIZADA`
+
+Campos esperados:
+
+| Campo               | Tipo  |
+| ------------------- | ----- |
+| SubscriberKey       | Text  |
+| EmailAddress        | Email |
+| nomeDe              | Text  |
+| nomePara            | Text  |
+| mensagem            | Text  |
+| nova_subscriber_key | Text  |
+| data_resp           | Date  |
+| emailRemetente      | Email |
+
+---
+
+## Notas
+
+* Permite múltiplos envios (sem primary key)
+* Preparada para ativação via Journey Builder
+* UX orientada à seleção guiada de conteúdo
+* Validação básica de formulário
+* Uso de Tailwind + GSAP para UI e animações
