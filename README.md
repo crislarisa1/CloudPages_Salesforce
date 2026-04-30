@@ -1,60 +1,43 @@
 # CloudPages
 
-# Cloud Page 2: Mensagem Personalizada
+# Cloud Page 1: Inscrição
 
 ## Descrição
 
-Cloud Page desenvolvida no Salesforce Marketing Cloud para envio de mensagens personalizadas entre utilizadores, com armazenamento em Data Extension e integração com Journey Builder.
+Landing page desenvolvida no Salesforce Marketing Cloud para captação de emails, armazenamento em Data Extension e exibição de mensagens dinâmicas conforme o estado do utilizador.
 
 ---
 
 ## Funcionamento
 
-* Captura dados do formulário:
+* Captura o email via formulário
+* Verifica se já existe na base (`LookupRows`)
+* Se novo:
 
-  * Email remetente
-  * Email destinatário
-  * Nome de quem envia
-  * Nome de quem recebe
-  * Mensagem selecionada
-
-* Valida se os campos obrigatórios estão preenchidos
-
-* Se inválido:
-
-  * Exibe mensagem de erro
-
-* Se válido:
-
-  * Insere registo na Data Extension (`InsertData`)
-  * Gera Subscriber Key
+  * Insere com `UpsertDE`
+  * Gera subscriber key
   * Regista data/hora
-  * Prepara envio via Journey Builder
   * Exibe mensagem de sucesso
+* Se já existir:
+
+  * Não insere novamente
+  * Exibe mensagem alternativa
+* Controla exibição do formulário via variável (`@exibir_form`)
 
 ---
 
-## AMPscript
+## AMPscript (Resumo)
 
 ```ampscript
-SET @submitted = RequestParameter('submitted')
+SET @email = RequestParameter('email')
+SET @jaExiste = LookupRows("DEX_LP_INSCRICAO","email",@email)
 
-IF @submitted == "true" THEN
+IF NOT EMPTY(@email) AND RowCount(@jaExiste) == 0 THEN
+  UpsertDE(...)
+  SET @exibir_form = "false"
 
-  IF EMPTY(@emailDestinatario) OR EMPTY(@emailRemetente) OR EMPTY(@mensagemCard) THEN
-    SET @mensagemErro = "Erro"
-  ELSE
-
-    SET @insertStatus = InsertData(...)
-
-    IF @insertStatus > 0 THEN
-      SET @mensagemSucesso = "Sucesso"
-    ELSE
-      SET @mensagemErro = "Erro"
-    ENDIF
-
-  ENDIF
-
+ELSEIF RowCount(@jaExiste) > 0 THEN
+  SET @exibir_form = "false"
 ENDIF
 ```
 
@@ -62,73 +45,33 @@ ENDIF
 
 ## HTML
 
-* Formulário com envio para a própria página
-* Campo hidden para controlo de submissão
-* Campo hidden para armazenar mensagem selecionada
-
-```html
-<form action="%%=RequestParameter('PAGEURL')=%%" method="post">
-```
-
----
-
-## Interação (Frontend)
-
-* Seleção de mensagens via cards
-* Ao clicar:
-
-  * Aplica estilo visual (seleção)
-  * Preenche campo hidden (`mensagemCard`)
-  * Ativa botão de envio
-
-```javascript
-function selectCard(element) {
-  const text = element.querySelector('.card-text').innerText;
-  document.getElementById('selectedMessage').value = text;
-  document.getElementById('submitBtn').disabled = false;
-}
-```
-
----
-
-## Renderização Condicional
+* Formulário submete para a própria página
+* Conteúdo é renderizado dinamicamente com AMPscript
 
 ```ampscript
-%%[ IF NOT EMPTY(@mensagemSucesso) THEN ]%%
-  <!-- sucesso -->
+%%[ IF @exibir_form == "false" THEN ]%%
+  %%=v(@mensagem)=%%
 %%[ ELSE ]%%
   <!-- formulário -->
 %%[ ENDIF ]%%
 ```
 
-* Exibe sucesso após envio
-* Caso contrário, mantém formulário
-
 ---
 
 ## Data Extension
 
-**Nome:** `DEX_LP_MENSAGEMPERSONALIZADA`
+**Nome:** `DEX_LP_INSCRICAO`
 
-Campos esperados:
-
-| Campo               | Tipo  |
-| ------------------- | ----- |
-| SubscriberKey       | Text  |
-| EmailAddress        | Email |
-| nomeDe              | Text  |
-| nomePara            | Text  |
-| mensagem            | Text  |
-| nova_subscriber_key | Text  |
-| data_resp           | Date  |
-| emailRemetente      | Email |
+| Campo               | Tipo |
+| ------------------- | ---- |
+| email               | Text |
+| nova_subscriber_key | Text |
+| data_resp           | Date |
 
 ---
 
 ## Notas
 
-* Permite múltiplos envios (sem primary key)
-* Preparada para ativação via Journey Builder
-* UX orientada à seleção guiada de conteúdo
-* Validação básica de formulário
-* Uso de Tailwind + GSAP para UI e animações
+* Evita duplicidade de leads
+* Estrutura simples e reutilizável
+* Preparada para integração com jornadas e CRM
